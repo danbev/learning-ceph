@@ -13,7 +13,7 @@
     "node"
   ],
   "author": "Daniel Bevenius",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "devDependencies": {
     "cmake-js": "^6.1.0"
   },
