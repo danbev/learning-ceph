@@ -7,8 +7,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports);
 
 namespace cephnapi {
 
-std::string version();
-Napi::String VersionWrapped(const Napi::CallbackInfo& info);
+Napi::String version(const Napi::CallbackInfo& info);
 
 }
 
