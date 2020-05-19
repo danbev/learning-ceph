@@ -53,6 +53,5 @@ $ cd n-api
 $ npm i
 $ npm run compile
 $ node index.js
-ceph_napi: { version: [Function (anonymous)] }
-version: 0.0.1
+librados version: 3.0.0
 ```
