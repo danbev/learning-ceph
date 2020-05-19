@@ -50,9 +50,14 @@ Is a REST-based gateway.
 
 ### Clients
 Before a client can start storing/retreiving data it needs to contact one of
-the monitors to get the various cluster maps. Once it has these it can operate
-independently as the client is cluster aware. So they can talk directly to the 
-OSDs.
+the monitors to get the various cluster maps. With the cluster map the client is
+made aware of all the monitors in the cluster, all the OSDs, and the metadata
+daemons in the cluster. But it does not know anything about where objects are
+stored. The location of where data is stored is calculated/computed.
+
+Once it has these it can operate independently as the client is cluster aware.
+The client writes an object to a pool and specifies an object id.
+
 
 
 TODO: continue fleshing out components that make up Ceph
@@ -63,6 +68,11 @@ This section will go through installing Ceph on Fedora
 ```console
 $ curl --silent --remote-name --location https://github.com/ceph/ceph/raw/octopus/src/cephadm/cephadm
 $ chmod -x cephadm
+```
+
+Starting a Ceph cluster:
+```console
+$ sudo ./cephadm bootstrap --mon-ip 192.168.1.74
 ```
 
 Installing librados:
