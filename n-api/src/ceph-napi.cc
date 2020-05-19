@@ -1,4 +1,7 @@
 #include <napi.h>
+#include <rados/librados.h>
+#include <string>
+#include <iostream>
 #include "ceph-napi.h"
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
@@ -12,7 +15,9 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 namespace cephnapi {
 
 std::string version(){
-  return "0.0.1";
+  int major, minor, extra;
+  rados_version(&major, &minor, &extra);
+  return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(extra);
 }
 
 Napi::String VersionWrapped(const Napi::CallbackInfo& info)

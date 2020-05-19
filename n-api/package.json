@@ -4,7 +4,8 @@
   "description": "Node.js N-API addon for Ceph",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "npx cmake-js compile",
+    "clean": "rm -rf build"
   },
   "keywords": [
     "cepf",
@@ -13,10 +14,6 @@
   ],
   "author": "Daniel Bevenius",
   "license": "ISC",
-  "scripts": {
-    "compile": "npx cmake-js compile",
-    "clean": "rm -rf build"
-  },
   "devDependencies": {
     "cmake-js": "^6.1.0"
   },

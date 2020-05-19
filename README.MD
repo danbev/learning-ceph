@@ -15,11 +15,18 @@ $ curl --silent --remote-name --location https://github.com/ceph/ceph/raw/octopu
 $ chmod -x cephadm
 ```
 
+Installing librados:
+```console
+$ sudo dnf install -y librados-devel
+```
 
 ### Ceph-napi
 The [n-api](./n-api) directory contains an example of what a node native addon
 written using N-API might look like. This is currently only an example that has
 not do anything with ceph but might in the future.
+
+This native module use [Librados](https://docs.ceph.com/docs/master/rados/api/librados/).
+
 
 #### Building
 ```console
