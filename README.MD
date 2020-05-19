@@ -6,6 +6,25 @@ the best way use Ceph from Node.js
 This section will contains information about Ceph as I don't know anything at
 all about it, nor am I very familiar with storage solutions either.
 
+Ceph is a storage system that does not have a centralized metadata server and
+uses a an algorithm called Controlled Replication Under Scalable Hashing (CRUSH).
+Instead of asking a central metadata server where data is stored the location
+of data is calculated.
+
+There are 3 types of storage that Ceph provides:
+* Block storage via RADOS Block Device (RBD)
+* Object storage via RADOS Gateway
+* File storage via CephFS
+
+### Reliable Autonomous Distributed Object Store (RADOS)
+This is the object store upon which everything else is built. This layer contains
+the Object Store Daeomons (OSD). These daemons are totally independant and form
+peer-to-peer relationships to form a cluster (sounds similar to what is/was
+possible when using jgroups).
+
+Clients connect directly OSDs (how does this work when one goes down?)
+
+TODO: continue fleshing out components that make up Ceph
 
 ### Installing Ceph
 This section will go through installing Ceph on Fedora
