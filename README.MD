@@ -72,7 +72,50 @@ $ chmod -x cephadm
 
 Starting a Ceph cluster:
 ```console
-$ sudo ./cephadm bootstrap --mon-ip 192.168.1.74
+$ sudo ./cephadm bootstrap --mon-ip 192.168.1.74 --allow-fqdn-hostname
+```
+
+Install Ceph tools:
+```console
+$ sudo ./cephadm install ceph-common
+INFO:cephadm:Installing packages ['ceph-common']...
+$ ceph -v
+ceph version 14.2.9 (581f22da52345dba46ee232b73b990f06029a2a0) nautilus (stable)
+```
+
+Get the status of the Ceph cluster:
+```console
+$ sudo ceph -s
+  cluster:
+    id:     62418068-9a65-11ea-b0db-482ae34923e7
+    health: HEALTH_WARN
+            2 stray daemons(s) not managed by cephadm
+            1 stray host(s) with 2 daemon(s) not managed by cephadm
+            Reduced data availability: 1 pg inactive
+            OSD count 0 < osd_pool_default_size 3
+ 
+  services:
+    mon: 1 daemons, quorum localhost.localdomain (age 18m)
+    mgr: localhost.localdomain.tdctad(active, since 18m)
+    osd: 0 osds: 0 up, 0 in
+ 
+  data:
+    pools:   1 pools, 1 pgs
+    objects: 0 objects, 0 B
+    usage:   0 B used, 0 B / 0 B avail
+    pgs:     100.000% pgs unknown
+             1 unknown
+```
+Note that is you forget the `sudo` command you'll get the following error:
+```console
+$ ceph -s
+[errno 13] error connecting to the cluster
+```
+
+
+Accessing the Ceph cluster:
+```console
+$ sudo ./cephadm shell
 ```
 
 Installing librados:
