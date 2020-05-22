@@ -70,24 +70,56 @@ The client writes an object to a pool and specifies an object id.
 TODO: continue fleshing out components that make up Ceph
 
 ### Installing Ceph
-This section will go through installing Ceph on Fedora
+This section will go through installing Ceph on Fedora. Most examples that I've
+come accross use a tool named `ceph-deploy` but this tool is no longer maintained
+and does not work with my version of Fedora ([link](https://ceph.io/ceph-management/introducing-cephadm/)).
 
+
+Install `cephadm`:
 ```console
 $ curl --silent --remote-name --location https://github.com/ceph/ceph/raw/octopus/src/cephadm/cephadm
-$ chmod -x cephadm
+```
+
+Install Ceph tools:
+```console
+$ sudo dnf install fmt
+```
+Create `/etc/yum.repos.d/ceph.repo` with the following content:
+```
+[Ceph]
+name=Ceph $basearch
+baseurl=https://download.ceph.com/rpm-octopus/el8/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://download.ceph.com/keys/release.asc
+
+[Ceph-noarch]
+name=Ceph noarch
+baseurl=https://download.ceph.com/rpm-octopus/el8/noarch
+enabled=1
+gpgcheck=1
+gpgkey=https://download.ceph.com/keys/release.asc
+
+[Ceph-source]
+name=Ceph SRPMS
+baseurl=https://download.ceph.com/rpm-octopus/el9/SRPMS
+enabled=1
+gpgcheck=1
+gpgkey=https://download.ceph.com/keys/release.asc
+```
+There is an option to have this repo file created named `add-repo` but there
+was no such build for fedora, so I'm currently using `el8` and hoping for the 
+best.
+
+```
+$ sudo ./cephadm install ceph-common
+INFO:cephadm:Installing packages ['ceph-common']...
+$ ceph -v
 ```
 
 Starting a Ceph cluster:
 ```console
 $ sudo ./cephadm bootstrap --mon-ip 192.168.1.74 --allow-fqdn-hostname
-```
-
-Install Ceph tools:
-```console
-$ sudo ./cephadm install ceph-common
-INFO:cephadm:Installing packages ['ceph-common']...
-$ ceph -v
-ceph version 14.2.9 (581f22da52345dba46ee232b73b990f06029a2a0) nautilus (stable)
 ```
 
 Get the status of the Ceph cluster:
