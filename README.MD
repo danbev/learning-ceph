@@ -37,15 +37,22 @@ OSDs also report back there state to the monitors.
 TODO
 
 ### Object Store Daemons
-The data that these store has an identifier, binary data, and metadata consiting
-of key/value pairs.
+This the what actually stores the data on a file system and providing access to
+this data. The data that these OSDs store has an identifier, binary data, and
+metadata consiting of key/value pairs.
+This data can be accessed through the Ceph API, using Amazon S2 services,
+or using the provided REST based API.
 
 
 ### Librados
-Is a library allowing direct access to RADOS
+Is a library allowing direct access to RADOS.
 
 ### Radosgw
 Is a REST-based gateway.
+
+### Controlled Replication Under Scalable Hashing (CRUSH)
+This is the name of the algorighm that Ceph uses which is what determines where
+to place data. The CRUSH map provides a view of what the cluster looks like.
 
 
 ### Clients
