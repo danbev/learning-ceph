@@ -24,6 +24,8 @@ possible when using jgroups).
 An OSD is normally mapped to a single disk (where traditional approaches would
 use multiple disks and a RAID controller).
 
+Each object is a stream of binary data which is associated key when created.
+
 ### Storage cluster
 A storage cluster consists of monitors, and OSD daemons.
 
@@ -66,6 +68,11 @@ Once it has these it can operate independently as the client is cluster aware.
 The client writes an object to a pool and specifies an object id.
 
 
+### Amazon Simple Storage Service (S3)
+Is a cloud object protocol used with amazons online file storage web service.
+
+### Swift
+Like S3 is a cloud object protocol but from the OpenStack foundation.
 
 TODO: continue fleshing out components that make up Ceph
 
@@ -74,52 +81,63 @@ This section will go through installing Ceph on Fedora. Most examples that I've
 come accross use a tool named `ceph-deploy` but this tool is no longer maintained
 and does not work with my version of Fedora ([link](https://ceph.io/ceph-management/introducing-cephadm/)).
 
+Install Ceph tools:
+```console
+$ sudo dnf install ceph-common fmt
+$ ceph --version
+ceph version 14.2.9 (581f22da52345dba46ee232b73b990f06029a2a0) nautilus (stable)
+```
 
 Install `cephadm`:
 ```console
 $ curl --silent --remote-name --location https://github.com/ceph/ceph/raw/octopus/src/cephadm/cephadm
-```
-
-Install Ceph tools:
-```console
-$ sudo dnf install fmt
-```
-Create `/etc/yum.repos.d/ceph.repo` with the following content:
-```
-[Ceph]
-name=Ceph $basearch
-baseurl=https://download.ceph.com/rpm-octopus/el8/$basearch
-enabled=1
-gpgcheck=1
-gpgkey=https://download.ceph.com/keys/release.asc
-
-[Ceph-noarch]
-name=Ceph noarch
-baseurl=https://download.ceph.com/rpm-octopus/el8/noarch
-enabled=1
-gpgcheck=1
-gpgkey=https://download.ceph.com/keys/release.asc
-
-[Ceph-source]
-name=Ceph SRPMS
-baseurl=https://download.ceph.com/rpm-octopus/el9/SRPMS
-enabled=1
-gpgcheck=1
-gpgkey=https://download.ceph.com/keys/release.asc
-```
-There is an option to have this repo file created named `add-repo` but there
-was no such build for fedora, so I'm currently using `el8` and hoping for the 
-best.
-
-```
-$ sudo ./cephadm install ceph-common
-INFO:cephadm:Installing packages ['ceph-common']...
-$ ceph -v
+$ chmod 744 cephadm
 ```
 
 Starting a Ceph cluster:
 ```console
 $ sudo ./cephadm bootstrap --mon-ip 192.168.1.74 --allow-fqdn-hostname
+```
+
+Get ip:
+```console
+$ ip addr show
+```
+
+```console
+$ sudo ./cephadm ls
+[
+    {
+        "style": "cephadm:v1",
+        "name": "mon.localhost.localdomain",
+        "fsid": "62418068-9a65-11ea-b0db-482ae34923e7",
+        "enabled": true,
+        "state": "running",
+        "container_id": "648a087052751e5a40a5048f5a04964b0d105f16d96571b0413795809eb2eeb8",
+        "container_image_name": "docker.io/ceph/ceph:v15",
+        "container_image_id": "4569944bb86c3f9b5286057a558a3f852156079f759c9734e54d4f64092be9fa",
+        "version": "15.2.2",
+        "started": "2020-05-20T06:45:20.837583",
+        "created": "2020-05-20T06:45:17.648583",
+        "deployed": "2020-05-20T06:45:16.743583",
+        "configured": "2020-05-20T06:45:17.648583"
+    },
+    {
+        "style": "cephadm:v1",
+        "name": "mgr.localhost.localdomain.tdctad",
+        "fsid": "62418068-9a65-11ea-b0db-482ae34923e7",
+        "enabled": true,
+        "state": "running",
+        "container_id": "74fe45114309474f286e7060b590457104daa247654d14170e6c8eac456a4ea3",
+        "container_image_name": "docker.io/ceph/ceph:v15",
+        "container_image_id": "4569944bb86c3f9b5286057a558a3f852156079f759c9734e54d4f64092be9fa",
+        "version": "15.2.2",
+        "started": "2020-05-20T06:45:21.822435",
+        "created": "2020-05-20T06:45:21.757585",
+        "deployed": "2020-05-20T06:45:21.338585",
+        "configured": "2020-05-20T06:45:21.757585"
+    }
+]
 ```
 
 Get the status of the Ceph cluster:
@@ -151,11 +169,22 @@ $ ceph -s
 [errno 13] error connecting to the cluster
 ```
 
+Adding and OSD:
+```console
+$
+```
 
 Accessing the Ceph cluster:
 ```console
 $ sudo ./cephadm shell
 ```
+
+To stop a cluster:
+```
+$sudo ./cephadm rm-cluster --fsid=62418068-9a65-11ea-b0db-482ae34923e7 --force
+```
+You can use `./cephadm ls` to get the fsid.
+
 
 Installing librados:
 ```console
@@ -177,3 +206,8 @@ $ npm run compile
 $ node index.js
 librados version: 3.0.0
 ```
+
+### Journaling file system
+Is when transaction or operations are stored in a special allocation on disk
+allowing a write to be rolled-back if something happens to the write operation
+while it is in progress.
