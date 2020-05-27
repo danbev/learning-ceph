@@ -52,45 +52,57 @@ when bootstrapping the initial monitor.
 Administrator keyring which is used by the ceph CLI tools, which requires a
 user named client.admin. This user must also be added to the monitor keyring.
 
-#### Create /etc/ceph/ceph.conf
+#### Configure a monitor
+The following steps go through and initial monitor on my laptop.
+
 I tried using a string as the value for `fsid` but later failed. Instead I used
 `uuidgen`(:r!uuidgen):
 ```
+[global]
 fsid = 9820a792-a2d8-42a0-a7e5-6e23a2bc9d69
 mon initial members = localhost.localdomain
-mon host = {192.168.1.74}
+mon host = 192.168.1.74
 ```
+
 Create the keyring for the monitor:
 ```console
 $ sudo ceph-authtool --create-keyring /tmp/ceph.mon.keyring --gen-key -n mon. --cap mon 'allow *'
 ```
+
 Create the keyring for the client cli tools:
 ```console
 $ sudo ceph-authtool --create-keyring /etc/ceph/ceph.client.admin.keyring --gen-key -n client.admin --cap mon 'allow *' --cap osd 'allow *' --cap mds 'allow *' --cap mgr 'allow *'
 ```
+
 Create the bootstrap-osd keyring:
 ```console
 $ mkdir -p /var/lib/ceph/bootstrap-osd/
 $ ceph-authtool --create-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'
 ```
+
 Add the client.admin.key to the monitor keyring:
 ```console
 $ ceph-authtool /tmp/ceph.mon.keyring --import-keyring /etc/ceph/ceph.client.admin.keyring
 ```
+
 ```console
 $ ceph-authtool /tmp/ceph.mon.keyring --import-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring
 ```
+
 ```console
 $ chown ceph:ceph /tmp/ceph.mon.keyring
 ```
+
 ```console
 $ monmaptool --create --add localhost.localdomain 192.168.1.74 --fsid 9820a792-a2d8-42a0-a7e5-6e23a2bc9d69 /tmp/monmap
 monmaptool: monmap file /tmp/monmap
 monmaptool: set fsid to 9820a792-a2d8-42a0-a7e5-6e23a2bc9d69
 monmaptool: writing epoch 0 to /tmp/monmap (1 monitors)
 ```
+
 Next, create a default data directory for the montior:
 ```console
+$ chown -R ceph:ceph /var/lib/ceph/
 $ mkdir -p /var/lib/ceph/mon/ceph-localhost.localdomain
 ```
 The format of the directory name is `clustername-hostname`, so in the our case
@@ -102,6 +114,9 @@ above and the keyring:
 ```console
 $ sudo -u ceph ceph-mon --cluster ceph --mkfs -i localhost.localdomain --monmap /tmp/monmap --keyring /tmp/ceph.mon.keyring
 ```
+
+#### Start the monitor
+TODO:
 
 ### Manager
 TODO
