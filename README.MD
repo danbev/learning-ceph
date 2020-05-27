@@ -35,6 +35,74 @@ and use cluster maps for this. Cluster clients retrives the cluster map from one
 of the monitors.
 OSDs also report back there state to the monitors.
 
+#### Bootstrapping a monitor
+A monitor as a unique id this called `fsid` which stands for File System ID which
+was a little strange until I read that this is a remainder from the days when
+Ceph mostly a Ceph FS.
+
+A monitor also needs to know the clustername (the default is ceph).
+Monitor name can be set but defaults to the hostname of the node it runs on.
+
+A monitor map is generated using the fsid, clustername, and one or more hostname
+and IP addresses.
+
+Monitor keyring for communication with other monitors. This must be provided
+when bootstrapping the initial monitor.
+
+Administrator keyring which is used by the ceph CLI tools, which requires a
+user named client.admin. This user must also be added to the monitor keyring.
+
+#### Create /etc/ceph/ceph.conf
+I tried using a string as the value for `fsid` but later failed. Instead I used
+`uuidgen`(:r!uuidgen):
+```
+fsid = 9820a792-a2d8-42a0-a7e5-6e23a2bc9d69
+mon initial members = localhost.localdomain
+mon host = {192.168.1.74}
+```
+Create the keyring for the monitor:
+```console
+$ sudo ceph-authtool --create-keyring /tmp/ceph.mon.keyring --gen-key -n mon. --cap mon 'allow *'
+```
+Create the keyring for the client cli tools:
+```console
+$ sudo ceph-authtool --create-keyring /etc/ceph/ceph.client.admin.keyring --gen-key -n client.admin --cap mon 'allow *' --cap osd 'allow *' --cap mds 'allow *' --cap mgr 'allow *'
+```
+Create the bootstrap-osd keyring:
+```console
+$ mkdir -p /var/lib/ceph/bootstrap-osd/
+$ ceph-authtool --create-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'
+```
+Add the client.admin.key to the monitor keyring:
+```console
+$ ceph-authtool /tmp/ceph.mon.keyring --import-keyring /etc/ceph/ceph.client.admin.keyring
+```
+```console
+$ ceph-authtool /tmp/ceph.mon.keyring --import-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring
+```
+```console
+$ chown ceph:ceph /tmp/ceph.mon.keyring
+```
+```console
+$ monmaptool --create --add localhost.localdomain 192.168.1.74 --fsid 9820a792-a2d8-42a0-a7e5-6e23a2bc9d69 /tmp/monmap
+monmaptool: monmap file /tmp/monmap
+monmaptool: set fsid to 9820a792-a2d8-42a0-a7e5-6e23a2bc9d69
+monmaptool: writing epoch 0 to /tmp/monmap (1 monitors)
+```
+Next, create a default data directory for the montior:
+```console
+$ mkdir -p /var/lib/ceph/mon/ceph-localhost.localdomain
+```
+The format of the directory name is `clustername-hostname`, so in the our case
+I'm using `ceph` as the cluster name and its is on my local machine which is
+named `localhost.localdomain`.
+
+Now, we need to populate the monitor daemon with the monitor map we generated
+above and the keyring:
+```console
+$ sudo -u ceph ceph-mon --cluster ceph --mkfs -i localhost.localdomain --monmap /tmp/monmap --keyring /tmp/ceph.mon.keyring
+```
+
 ### Manager
 TODO
 
@@ -66,6 +134,107 @@ stored. The location of where data is stored is calculated/computed.
 
 Once it has these it can operate independently as the client is cluster aware.
 The client writes an object to a pool and specifies an object id.
+
+### Cluster maps
+Both ceph clients and OSD daemons depend on having knowledge about the cluster.
+This is information is provided in five maps.
+
+#### Monitor map
+```console
+$ ceph mon dump
+dumped monmap epoch 1
+epoch 1
+fsid 82caea9a-9fd3-11ea-b761-482ae34923e7
+last_changed 2020-05-27T04:35:41.649530+0000
+created 2020-05-27T04:35:41.649530+0000
+min_mon_release 15 (octopus)
+0: [v2:192.168.1.74:3300/0,v1:192.168.1.74:6789/0] mon.localhost.localdomain
+```
+
+#### OSD map
+```console
+ceph osd dump
+epoch 4
+fsid 82caea9a-9fd3-11ea-b761-482ae34923e7
+created 2020-05-27T04:35:43.049269+0000
+modified 2020-05-27T04:35:58.723837+0000
+flags sortbitwise,recovery_deletes,purged_snapdirs,pglog_hardlimit
+crush_version 1
+full_ratio 0.95
+backfillfull_ratio 0.9
+nearfull_ratio 0.85
+require_min_compat_client jewel
+min_compat_client jewel
+require_osd_release octopus
+pool 1 'device_health_metrics' replicated size 3 min_size 2 crush_rule 0 object_hash rjenkins pg_num 1 pgp_num 1 autoscale_mode on last_change 3 flags hashpspool,creating stripe_width 0 pg_num_min 1 application mgr_devicehealth
+max_osd 0
+blacklist 192.168.1.74:0/3903093624 expires 2020-05-28T04:35:58.723811+0000
+blacklist 192.168.1.74:0/3640786923 expires 2020-05-28T04:35:58.723811+0000
+blacklist 192.168.1.74:6801/1724551218 expires 2020-05-28T04:35:58.723811+0000
+blacklist 192.168.1.74:0/4057683 expires 2020-05-28T04:35:58.723811+0000
+blacklist 192.168.1.74:6800/1724551218 expires 2020-05-28T04:35:58.723811+0000
+```
+
+#### Placement Group (gp) map
+```console
+$ ceph pg dump
+```
+
+#### CRUSH Map
+```console
+$ ceph osd getcrushmap -o compressed_crush_map
+1
+$ crushtool -d compressed_crush_map -o decompressed-crushmap
+```
+Output of `decompressed-crushmap`:
+```
+# begin crush map
+tunable choose_local_tries 0
+tunable choose_local_fallback_tries 0
+tunable choose_total_tries 50
+tunable chooseleaf_descend_once 1
+tunable chooseleaf_vary_r 1
+tunable chooseleaf_stable 1
+tunable straw_calc_version 1
+tunable allowed_bucket_algs 54
+
+# devices
+
+# types
+type 0 osd
+type 1 host
+type 2 chassis
+type 3 rack
+type 4 row
+type 5 pdu
+type 6 pod
+type 7 room
+type 8 datacenter
+type 9 zone
+type 10 region
+type 11 root
+
+# buckets
+root default {
+	id -1		# do not change unnecessarily
+	# weight 0.000
+	alg straw2
+	hash 0	# rjenkins1
+}
+
+# rules
+rule replicated_rule {
+	id 0
+	type replicated
+	min_size 1
+	max_size 10
+	step take default
+	step chooseleaf firstn 0 type host
+	step emit
+}
+
+# end crush map
+```
 
 
 ### Amazon Simple Storage Service (S3)
@@ -108,6 +277,41 @@ $ ceph --version
 ceph version 16.0.0-1852-g79c7ac53e6 (79c7ac53e671282ba8019f663e1449663342bfbd) pacific (dev)
 ```
 
+```console
+$ sudo ./cephadm bootstrap --mon-ip 192.168.1.74 --allow-fqdn-hostname
+...
+INFO:cephadm:Non-zero exit code 2 from /usr/bin/podman run --rm --net=host -e CONTAINER_IMAGE=docker.io/ceph/ceph:v15 -e NODE_NAME=localhost.localdomain -v /var/log/ceph/82caea9a-9fd3-11ea-b761-482ae34923e7:/var/log/ceph:z -v /tmp/ceph-tmphd_55e_u:/etc/ceph/ceph.client.admin.keyring:z -v /tmp/ceph-tmpgtca6lau:/etc/ceph/ceph.conf:z --entrypoint /usr/bin/ceph docker.io/ceph/ceph:v15 orch host add localhost.localdomain
+INFO:cephadm:/usr/bin/ceph:stderr Error ENOENT: Failed to connect to localhost.localdomain (localhost.localdomain).  Check that the host is reachable and accepts connections using the cephadm SSH key
+INFO:cephadm:/usr/bin/ceph:stderr you may want to run: 
+INFO:cephadm:/usr/bin/ceph:stderr > ssh -F =(ceph cephadm get-ssh-config) -i =(ceph config-key get mgr/cephadm/ssh_identity_key) root@localhost.localdomain
+Traceback (most recent call last):
+  File "./cephadm", line 4614, in <module>
+    r = args.func()
+  File "./cephadm", line 1154, in _default_image
+    return func()
+  File "./cephadm", line 2584, in command_bootstrap
+    cli(['orch', 'host', 'add', host])
+  File "./cephadm", line 2441, in cli
+    ).run(timeout=timeout)
+  File "./cephadm", line 2174, in run
+    self.run_cmd(), desc=self.entrypoint, timeout=timeout)
+  File "./cephadm", line 837, in call_throws
+    raise RuntimeError('Failed command: %s' % ' '.join(command))
+RuntimeError: Failed command: /usr/bin/podman run --rm --net=host -e CONTAINER_IMAGE=docker.io/ceph/ceph:v15 -e NODE_NAME=localhost.localdomain -v /var/log/ceph/82caea9a-9fd3-11ea-b761-482ae34923e7:/var/log/ceph:z -v /tmp/ceph-tmphd_55e_u:/etc/ceph/ceph.client.admin.keyring:z -v /tmp/ceph-tmpgtca6lau:/etc/ceph/ceph.conf:z --entrypoint /usr/bin/ceph docker.io/ceph/ceph:v15 orch host add localhost.localdomain
+```
+```console
+$ sudo ceph cephadm get-ssh-config
+[sudo] password for danielbevenius: 
+Host *
+  User root
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+  ConnectTimeout=30
+$ sudo ceph config-key get mgr/cephadm/ssh_identity_key
+
+
+$ ssh -F =(ceph cephadm get-ssh-config) -i =(ceph config-key get mgr/cephadm/ssh_identity_key) root@localhost.localdomain
+```
 Remove ceph if it is already installed.
 ```console
 $ sudo dnf remove ceph-common
