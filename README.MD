@@ -81,17 +81,56 @@ This section will go through installing Ceph on Fedora. Most examples that I've
 come accross use a tool named `ceph-deploy` but this tool is no longer maintained
 and does not work with my version of Fedora ([link](https://ceph.io/ceph-management/introducing-cephadm/)).
 
-Install Ceph tools:
+I'm using Fedora 31 and the latest cephadm is compatible (as far as I can tell)
+with version 15.2.1 of Ceph. But trying to install 15.2.1 on Fedora does not
+work (see below for details) and will fallback to installing 14.9.2 which is
+easy to miss. I've not been able to work around this so I opted to compile
+ceph locally instead (https://github.com/ceph/ceph#checking-out-the-source).
+After building, which takes a while, and running `make install` I got the following
+error when running ceph
 ```console
-$ sudo dnf install ceph-common fmt
+$ which ceph
+/usr/local/bin/ceph
 $ ceph --version
-ceph version 14.2.9 (581f22da52345dba46ee232b73b990f06029a2a0) nautilus (stable)
+Traceback (most recent call last):
+  File "/usr/local/bin/ceph", line 151, in <module>
+    from ceph_daemon import admin_socket, DaemonWatcher, Termsize
+  File "/usr/local/lib/python3.7/site-packages/ceph_daemon.py", line 24, in <module>
+    from prettytable import PrettyTable, HEADER
+ModuleNotFoundError: No module named 'prettytable'
+```
+This can be fixed bu installing `PrettyTable`:
+```console
+$ sudo pip install PrettyTable
+```
+```console
+$ ceph --version
+ceph version 16.0.0-1852-g79c7ac53e6 (79c7ac53e671282ba8019f663e1449663342bfbd) pacific (dev)
+```
+
+Remove ceph if it is already installed.
+```console
+$ sudo dnf remove ceph-common
 ```
 
 Install `cephadm`:
 ```console
 $ curl --silent --remote-name --location https://github.com/ceph/ceph/raw/octopus/src/cephadm/cephadm
 $ chmod 744 cephadm
+```
+
+```console
+$ sudo ./cephadm add-repo --version 15.2.1
+INFO:root:Writing repo to /etc/yum.repos.d/ceph.repo...
+```
+There was no repository for Fedora 31 which I'm using so I updated the above
+`ceph.repo` file to use `el8` instead.
+
+Install ceph tools:
+```console
+$ sudo dnf install ceph-common
+Problem: cannot install the best candidate for the job
+  - nothing provides /usr/libexec/platform-python needed by ceph-common-2:15.2.1-0.el8.x86_64
 ```
 
 Starting a Ceph cluster:
