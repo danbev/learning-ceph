@@ -62,6 +62,16 @@ I tried using a string as the value for `fsid` but later failed. Instead I used
 fsid = 9820a792-a2d8-42a0-a7e5-6e23a2bc9d69
 mon initial members = localhost.localdomain
 mon host = 192.168.1.74
+public network = 192.168.1.1/24
+auth cluster required = cephx
+auth service required = cephx
+auth client required = cephx
+osd journal size = 1024
+osd pool default size = 1
+osd pool default min size = 1
+osd pool default pg num = 333
+osd pool default pgp num = 333
+osd crush chooseleaf type = 1
 ```
 
 Create the keyring for the monitor:
@@ -117,6 +127,10 @@ $ sudo -u ceph ceph-mon --cluster ceph --mkfs -i localhost.localdomain --monmap 
 
 #### Start the monitor
 TODO:
+```console
+$ ceph-mon -f --mon-data /var/lib/ceph/mon/ceph-localhost.localdomain/ --id a --setuser root --setgroup root
+```
+Notice that the monitor id is `a'.
 
 ### Manager
 TODO
