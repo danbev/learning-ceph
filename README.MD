@@ -87,7 +87,7 @@ $ sudo ceph-authtool --create-keyring /etc/ceph/ceph.client.admin.keyring --gen-
 Create the bootstrap-osd keyring:
 ```console
 $ mkdir -p /var/lib/ceph/bootstrap-osd/
-$ ceph-authtool --create-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'
+$ sudo ceph-authtool --create-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'
 ```
 
 Add the client.admin.key to the monitor keyring:
@@ -126,7 +126,6 @@ $ sudo -u ceph ceph-mon --cluster ceph --mkfs -i localhost.localdomain --monmap 
 ```
 
 #### Start the monitor
-TODO:
 ```console
 $ ceph-mon -f --mon-data /var/lib/ceph/mon/ceph-localhost.localdomain/ --id localhost.localdomain --setuser root --setgroup root
 ```
@@ -144,6 +143,27 @@ sudo ceph --admin-daemon /var/run/ceph/ceph-mon.localhost.localdomain.asok versi
 Check the status of the cluster:
 ```console
 $ sudo ceph -s
+[sudo] password for danielbevenius: 
+  cluster:
+    id:     9820a792-a2d8-42a0-a7e5-6e23a2bc9d69
+    health: HEALTH_WARN
+            1 monitors have not enabled msgr2
+ 
+  services:
+    mon: 1 daemons, quorum localhost.localdomain (age 10s)
+    mgr: no daemons active
+    osd: 0 osds: 0 up, 0 in
+ 
+  data:
+    pools:   0 pools, 0 pgs
+    objects: 0 objects, 0 B
+    usage:   0 B used, 0 B / 0 B avail
+    pgs:
+```
+
+Tail monitor logs:
+```console
+$ tail -f /var/log/ceph/ceph-mon.localhost.localdomain.log
 ```
 
 
