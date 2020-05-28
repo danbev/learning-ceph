@@ -56,13 +56,12 @@ user named client.admin. This user must also be added to the monitor keyring.
 The following steps go through and initial monitor on my laptop.
 
 I tried using a string as the value for `fsid` but later failed. Instead I used
-`uuidgen`(:r!uuidgen):
+`uuidgen` (:r!uuidgen in vim):
 ```
 [global]
 fsid = 9820a792-a2d8-42a0-a7e5-6e23a2bc9d69
 mon initial members = localhost.localdomain
 mon host = 192.168.1.74
-public network = 192.168.1.1/24
 auth cluster required = cephx
 auth service required = cephx
 auth client required = cephx
@@ -74,12 +73,12 @@ osd pool default pgp num = 333
 osd crush chooseleaf type = 1
 ```
 
-Create the keyring for the monitor:
+Create the keyring for the monitor(s):
 ```console
 $ sudo ceph-authtool --create-keyring /tmp/ceph.mon.keyring --gen-key -n mon. --cap mon 'allow *'
 ```
 
-Create the keyring for the client cli tools:
+Create the keyring for the client.admin user:
 ```console
 $ sudo ceph-authtool --create-keyring /etc/ceph/ceph.client.admin.keyring --gen-key -n client.admin --cap mon 'allow *' --cap osd 'allow *' --cap mds 'allow *' --cap mgr 'allow *'
 ```
@@ -90,17 +89,18 @@ $ mkdir -p /var/lib/ceph/bootstrap-osd/
 $ sudo ceph-authtool --create-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'
 ```
 
-Add the client.admin.key to the monitor keyring:
+Add client.admin to the monitor keyring:
 ```console
 $ ceph-authtool /tmp/ceph.mon.keyring --import-keyring /etc/ceph/ceph.client.admin.keyring
 $ sudo chmod +r /etc/ceph/ceph.client.admin.keyring 
 ```
 
+Add bootstrap-osd the monitor keyring:
 ```console
 $ ceph-authtool /tmp/ceph.mon.keyring --import-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring
 ```
 
-
+Generate the monitor map:
 ```console
 $ monmaptool --create --add localhost.localdomain 192.168.1.74 --fsid 9820a792-a2d8-42a0-a7e5-6e23a2bc9d69 /tmp/monmap
 monmaptool: monmap file /tmp/monmap
@@ -125,12 +125,12 @@ $ sudo -u ceph ceph-mon --cluster ceph --mkfs -i localhost.localdomain --monmap 
 
 #### Start the monitor
 ```console
-$ ceph-mon -f --mon-data /var/lib/ceph/mon/ceph-localhost.localdomain/ --id localhost.localdomain --setuser root --setgroup root
+$ sudo ceph-mon -f --mon-data /var/lib/ceph/mon/ceph-localhost.localdomain/ --id localhost.localdomain --setuser root --setgroup root
 ```
 
 Connect to the monitor using unix domain socket:
 ```console
-sudo ceph --admin-daemon /var/run/ceph/ceph-mon.localhost.localdomain.asok version
+$ sudo ceph --admin-daemon /var/run/ceph/ceph-mon.localhost.localdomain.asok version
 {
     "version": "16.0.0-1852-g79c7ac53e6",
     "release": "pacific",
@@ -141,7 +141,6 @@ sudo ceph --admin-daemon /var/run/ceph/ceph-mon.localhost.localdomain.asok versi
 Check the status of the cluster:
 ```console
 $ sudo ceph -s
-[sudo] password for danielbevenius: 
   cluster:
     id:     9820a792-a2d8-42a0-a7e5-6e23a2bc9d69
     health: HEALTH_WARN
