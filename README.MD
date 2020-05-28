@@ -128,9 +128,25 @@ $ sudo -u ceph ceph-mon --cluster ceph --mkfs -i localhost.localdomain --monmap 
 #### Start the monitor
 TODO:
 ```console
-$ ceph-mon -f --mon-data /var/lib/ceph/mon/ceph-localhost.localdomain/ --id a --setuser root --setgroup root
+$ ceph-mon -f --mon-data /var/lib/ceph/mon/ceph-localhost.localdomain/ --id localhost.localdomain --setuser root --setgroup root
 ```
-Notice that the monitor id is `a'.
+
+Connect to the monitor using unix domain socket:
+```console
+sudo ceph --admin-daemon /var/run/ceph/ceph-mon.localhost.localdomain.asok version
+{
+    "version": "16.0.0-1852-g79c7ac53e6",
+    "release": "pacific",
+    "release_type": "dev"
+}
+```
+
+Check the status of the cluster:
+```console
+$ sudo ceph -s
+```
+
+
 
 ### Manager
 TODO
