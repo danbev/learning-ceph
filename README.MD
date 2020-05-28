@@ -93,15 +93,13 @@ $ sudo ceph-authtool --create-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring -
 Add the client.admin.key to the monitor keyring:
 ```console
 $ ceph-authtool /tmp/ceph.mon.keyring --import-keyring /etc/ceph/ceph.client.admin.keyring
+$ sudo chmod +r /etc/ceph/ceph.client.admin.keyring 
 ```
 
 ```console
 $ ceph-authtool /tmp/ceph.mon.keyring --import-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring
 ```
 
-```console
-$ chown ceph:ceph /tmp/ceph.mon.keyring
-```
 
 ```console
 $ monmaptool --create --add localhost.localdomain 192.168.1.74 --fsid 9820a792-a2d8-42a0-a7e5-6e23a2bc9d69 /tmp/monmap
@@ -159,6 +157,20 @@ $ sudo ceph -s
     objects: 0 objects, 0 B
     usage:   0 B used, 0 B / 0 B avail
     pgs:
+```
+
+We should now be able to connect using the napi module:
+```console
+$ cd n-api
+$ npm i
+$ npm run compile
+$ node index.js
+librados version: 3.0.0
+ceph-napi init...
+user_name: client.admin, cluster_name: ceph
+Created a cluster handle.
+Read cluster config: 
+Connected to the cluster...
 ```
 
 Tail monitor logs:

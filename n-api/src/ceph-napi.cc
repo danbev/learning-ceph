@@ -61,11 +61,12 @@ void init(const Napi::CallbackInfo& info) {
      .ThrowAsJavaScriptException();
     return;
   }
+  std::cout << "Read cluster config: " << '\n';
 
   ret = cluster.connect();
   if (ret < 0) {
-    std::cout << "Connected not connect to the cluster. ret= " << ret << '\n';
-    Napi::TypeError::New(env, "Cound not read connect to the cluster")
+    std::cout << "Connected not connect to the cluster. ret: " << ret << '\n';
+    Napi::TypeError::New(env, "Cound not connect to the cluster")
      .ThrowAsJavaScriptException();
     return;
   }
