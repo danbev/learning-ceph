@@ -177,11 +177,6 @@ Tail monitor logs:
 $ tail -f /var/log/ceph/ceph-mon.localhost.localdomain.log
 ```
 
-
-
-### Manager
-TODO
-
 ### Object Store Daemons
 This the what actually stores the data on a file system and providing access to
 this data. The data that these OSDs store has an identifier, binary data, and
@@ -189,6 +184,60 @@ metadata consiting of key/value pairs.
 This data can be accessed through the Ceph API, using Amazon S2 services,
 or using the provided REST based API.
 
+#### Configure an OSD
+Generate an id for the OSD:
+```console
+$ uuidgen 
+69480bbf-e494-408e-a094-9356220f07e6
+```
+Generate a cephx key for the OSD:
+```console
+$ ceph-authtool --gen-print-key
+AQAn19BeDxE8JBAAo5eHcn7NGOTWyEAz48uQIA==
+```
+
+Create the OSD:
+```console
+[root@localhost ~]# echo "{\"cephx_secret\": \"AQAn19BeDxE8JBAAo5eHcn7NGOTWyEAz48uQIA==\"}" | ceph osd new 69480bbf-e494-408e-a094-9356220f07e6 -i - -n client.bootstrap-osd -k /var/lib/ceph/bootstrap-osd/ceph.keyring
+
+2020-05-29T11:39:45.869+0200 7f9f93490700 -1 auth: unable to find a keyring on /etc/ceph/ceph.client.bootstrap-osd.keyring,/etc/ceph/ceph.keyring,/etc/ceph/keyring,/etc/ceph/keyring.bin,: (2) No such file or directory
+
+2020-05-29T11:39:45.869+0200 7f9f93490700 -1 AuthRegistry(0x7f9f8c058aa8) no keyring found at /etc/ceph/ceph.client.bootstrap-osd.keyring,/etc/ceph/ceph.keyring,/etc/ceph/keyring,/etc/ceph/keyring.bin,, disabling cephx
+```
+```console
+$ mkdir -p /var/lib/ceph/osd/ceph-7f9f93490700 
+```
+
+Write the secret to the OSD keyring:
+```console
+$ ceph-authtool --create-keyring /var/lib/ceph/osd/ceph-7f9f93490700/keyring --name osd.7f9f93490700 --add-key AQAn19BeDxE8JBAAo5eHcn7NGOTWyEAz48uQIA==
+creating /var/lib/ceph/osd/ceph-7f9f93490700/keyring
+added entity osd.7f9f93490700 auth(key=AQAn19BeDxE8JBAAo5eHcn7NGOTWyEAz48uQIA==)
+```
+
+Initialize the OSD data dir:
+```console
+$ ceph-osd -d -i 7f9f93490700 --mkfs --osd-uuid 69480bbf-e494-408e-a094-9356220f07e6
+```
+On my machine this just looks like it hangs the process and nothing happens. If
+I look in the log:
+```console
+$ sudo tail -f /var/log/ceph/ceph.audit.log 
+...
+2020-05-29T11:39:45.989613+0200 mon.localhost.localdomain (mon.0) 10 : audit [INF] from='client.? v1:192.168.1.74:0/1564672033' entity='client.bootstrap-osd' cmd='[{"prefix": "osd new", "uuid": "69480bbf-e494-408e-a094-9356220f07e6"}]': finished
+```
+
+
+
+Start the OSD daemon:
+```console
+$ ceph-osd -d --osd-data /var/lib/ceph/osd/ceph-7f9f93490700 --setuser root --setgroup root
+```
+
+After this I can see that there is one osd reported from `ceph -s`.
+
+### Manager
+TODO
 
 ### Librados
 Is a library allowing direct access to RADOS.
