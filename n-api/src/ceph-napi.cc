@@ -43,6 +43,18 @@ class InitWorker : public Napi::AsyncWorker {
       SetError("Cound not connect to the cluster");
       return;
     }
+    // TODO: we should really create a ObjectWrap for this and enable user
+    // to create on and call methods on it. That instance would also store the
+    // Rados instance (named cluster) here. But for now I just want to try things
+    // out and see if I can write data to an OSD.
+    librados::IoCtx io_ctx;
+    const char* poolname = "data";
+    ret = cluster.ioctx_create(poolname, io_ctx);
+    if (ret < 0) {
+      std::cout << "cannot open rados pool: " << poolname << ", ret: " << ret << '\n';
+      SetError("Cound not open rados pool");
+    }
+
   }
 
   void OnOK() override {
