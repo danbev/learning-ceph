@@ -12,6 +12,53 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 
 namespace cephnapi {
 
+class InitWorker : public Napi::AsyncWorker {
+ public:
+  InitWorker(std::string& username,
+             std::string& clustername,
+             Napi::Function& callback) :
+    AsyncWorker(callback), username_(username), clustername_(clustername) {}    
+
+  void Execute() override {
+    std::cout << "ceph-napi init..." << '\n';
+    Napi::Env env = Env();
+    librados::Rados cluster;
+    uint64_t flags = 0;
+
+    int ret = cluster.init2(username_.c_str(), clustername_.c_str(), flags);
+    if (ret < 0) {
+      SetError("Cound not initialize cluster handle");
+      return;
+    }
+
+    ret = cluster.conf_read_file("/etc/ceph/ceph.conf");
+    if (ret < 0) {
+      SetError("Cound not read /etc/ceph/ceph.conf");
+      return;
+    }
+
+    ret = cluster.connect();
+    if (ret < 0) {
+      std::cout << "Connected not connect to the cluster. ret: " << ret << '\n';
+      SetError("Cound not connect to the cluster");
+      return;
+    }
+  }
+
+  void OnOK() override {
+    Napi::HandleScope scope(Env());
+    Callback().Call({Napi::String::New(Env(), "connected")});
+  }
+
+  void OnError(const Napi::Error& error) override {
+    error.ThrowAsJavaScriptException();
+  }
+
+ private:
+  std::string username_;
+  std::string clustername_;
+};
+
 Napi::String version(const Napi::CallbackInfo& info) {
   int major, minor, extra;
   rados_version(&major, &minor, &extra);
@@ -20,57 +67,34 @@ Napi::String version(const Napi::CallbackInfo& info) {
   return returnValue;
 }
 
-void init(const Napi::CallbackInfo& info) {
-  std::cout << "ceph-napi init..." << '\n';
+Napi::Value init(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  if (!info.Length() > 2) {
-    Napi::TypeError::New(env, "username and cluster arguments "
+  if (!info.Length() > 3) {
+    Napi::TypeError::New(env, "username, cluster, and callback arguments "
         "must be specified").ThrowAsJavaScriptException();
-    return;
+    return info.Env().Undefined();
   }
   if (!info[0].IsString()) {
     Napi::TypeError::New(env, "username argument must be specified")
        .ThrowAsJavaScriptException();
-    return;
+    return info.Env().Undefined();
   }
   if (!info[1].IsString()) {
     Napi::TypeError::New(env, "clustername argument must be specified")
        .ThrowAsJavaScriptException();
-    return;
+    return info.Env().Undefined();
   }
-
-  Napi::String user_name = info[0].As<Napi::String>();
-  Napi::String cluster_name = info[1].As<Napi::String>();
-  uint64_t flags = 0;
-  librados::Rados cluster;
-
-  std::cout << "user_name: " << user_name.Utf8Value() << ", cluster_name: " << cluster_name.Utf8Value() << '\n';
-  int ret = cluster.init2(user_name.Utf8Value().c_str(),
-                          cluster_name.Utf8Value().c_str(),
-                          flags);
-  if (ret < 0) {
-    Napi::TypeError::New(env, "Cound not initialize cluster handle")
-     .ThrowAsJavaScriptException();
-    return;
+  if (!info[2].IsFunction()) {
+    Napi::TypeError::New(env, "callback argument must be specified")
+       .ThrowAsJavaScriptException();
+    return info.Env().Undefined();
   }
-
-  std::cout << "Created a cluster handle." << '\n';
-  ret = cluster.conf_read_file("/etc/ceph/ceph.conf");
-  if (ret < 0) {
-    Napi::TypeError::New(env, "Cound not read /etc/ceph/ceph.conf")
-     .ThrowAsJavaScriptException();
-    return;
-  }
-  std::cout << "Read cluster config: " << '\n';
-
-  ret = cluster.connect();
-  if (ret < 0) {
-    std::cout << "Connected not connect to the cluster. ret: " << ret << '\n';
-    Napi::TypeError::New(env, "Cound not connect to the cluster")
-     .ThrowAsJavaScriptException();
-    return;
-  }
-  std::cout << "Connected to the cluster..." << '\n';
+  std::string username = info[0].As<Napi::String>().Utf8Value();
+  std::string clustername = info[1].As<Napi::String>().Utf8Value();
+  Napi::Function callback = info[2].As<Napi::Function>();
+  InitWorker* worker = new InitWorker(username, clustername, callback);
+  worker->Queue();
+  return info.Env().Undefined();
 }
 
 } // namespace cephnapi

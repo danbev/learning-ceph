@@ -9,7 +9,7 @@ namespace cephnapi {
 
 Napi::String version(const Napi::CallbackInfo& info);
 
-void init(const Napi::CallbackInfo& info);
+Napi::Value init(const Napi::CallbackInfo& info);
 
 }
 
