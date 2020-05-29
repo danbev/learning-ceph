@@ -227,14 +227,26 @@ $ sudo tail -f /var/log/ceph/ceph.audit.log
 2020-05-29T11:39:45.989613+0200 mon.localhost.localdomain (mon.0) 10 : audit [INF] from='client.? v1:192.168.1.74:0/1564672033' entity='client.bootstrap-osd' cmd='[{"prefix": "osd new", "uuid": "69480bbf-e494-408e-a094-9356220f07e6"}]': finished
 ```
 
-
-
 Start the OSD daemon:
 ```console
 $ ceph-osd -d --osd-data /var/lib/ceph/osd/ceph-7f9f93490700 --setuser root --setgroup root
 ```
 
 After this I can see that there is one osd reported from `ceph -s`.
+
+### Pools
+
+List the available pools:
+```console
+$ ceph osd lspools
+```
+This returns nothing, so lets create a new pool.
+
+Create a new pool named `data`:
+```console
+$ ceph osd pool create data
+pool 'data' created
+```
 
 ### Manager
 TODO
