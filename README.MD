@@ -52,131 +52,6 @@ when bootstrapping the initial monitor.
 Administrator keyring which is used by the ceph CLI tools, which requires a
 user named client.admin. This user must also be added to the monitor keyring.
 
-#### Configure a monitor
-The following steps go through and initial monitor on my laptop.
-
-I tried using a string as the value for `fsid` but later failed. Instead I used
-`uuidgen` (:r!uuidgen in vim):
-```
-[global]
-fsid = 9820a792-a2d8-42a0-a7e5-6e23a2bc9d69
-mon initial members = localhost.localdomain
-mon host = 192.168.1.74
-auth cluster required = cephx
-auth service required = cephx
-auth client required = cephx
-osd journal size = 1024
-osd pool default size = 1
-osd pool default min size = 1
-osd pool default pg num = 333
-osd pool default pgp num = 333
-osd crush chooseleaf type = 1
-```
-
-Create the keyring for the monitor(s):
-```console
-$ sudo ceph-authtool --create-keyring /tmp/ceph.mon.keyring --gen-key -n mon. --cap mon 'allow *'
-```
-
-Create the keyring for the client.admin user:
-```console
-$ sudo ceph-authtool --create-keyring /etc/ceph/ceph.client.admin.keyring --gen-key -n client.admin --cap mon 'allow *' --cap osd 'allow *' --cap mds 'allow *' --cap mgr 'allow *'
-```
-
-Create the bootstrap-osd keyring:
-```console
-$ mkdir -p /var/lib/ceph/bootstrap-osd/
-$ sudo ceph-authtool --create-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'
-```
-
-Add client.admin to the monitor keyring:
-```console
-$ ceph-authtool /tmp/ceph.mon.keyring --import-keyring /etc/ceph/ceph.client.admin.keyring
-$ sudo chmod +r /etc/ceph/ceph.client.admin.keyring 
-```
-
-Add bootstrap-osd the monitor keyring:
-```console
-$ ceph-authtool /tmp/ceph.mon.keyring --import-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring
-```
-
-Generate the monitor map:
-```console
-$ monmaptool --create --add localhost.localdomain 192.168.1.74 --fsid 9820a792-a2d8-42a0-a7e5-6e23a2bc9d69 /tmp/monmap
-monmaptool: monmap file /tmp/monmap
-monmaptool: set fsid to 9820a792-a2d8-42a0-a7e5-6e23a2bc9d69
-monmaptool: writing epoch 0 to /tmp/monmap (1 monitors)
-```
-
-Next, create a default data directory for the montior:
-```console
-$ chown -R ceph:ceph /var/lib/ceph/
-$ mkdir -p /var/lib/ceph/mon/ceph-localhost.localdomain
-```
-The format of the directory name is `clustername-hostname`, so in the our case
-I'm using `ceph` as the cluster name and its is on my local machine which is
-named `localhost.localdomain`.
-
-Now, we need to populate the monitor daemon with the monitor map we generated
-above and the keyring:
-```console
-$ sudo -u ceph ceph-mon --cluster ceph --mkfs -i localhost.localdomain --monmap /tmp/monmap --keyring /tmp/ceph.mon.keyring
-```
-
-#### Start the monitor
-```console
-$ sudo ceph-mon -f --mon-data /var/lib/ceph/mon/ceph-localhost.localdomain/ --id localhost.localdomain --setuser root --setgroup root
-```
-
-Connect to the monitor using unix domain socket:
-```console
-$ sudo ceph --admin-daemon /var/run/ceph/ceph-mon.localhost.localdomain.asok version
-{
-    "version": "16.0.0-1852-g79c7ac53e6",
-    "release": "pacific",
-    "release_type": "dev"
-}
-```
-
-Check the status of the cluster:
-```console
-$ sudo ceph -s
-  cluster:
-    id:     9820a792-a2d8-42a0-a7e5-6e23a2bc9d69
-    health: HEALTH_WARN
-            1 monitors have not enabled msgr2
- 
-  services:
-    mon: 1 daemons, quorum localhost.localdomain (age 10s)
-    mgr: no daemons active
-    osd: 0 osds: 0 up, 0 in
- 
-  data:
-    pools:   0 pools, 0 pgs
-    objects: 0 objects, 0 B
-    usage:   0 B used, 0 B / 0 B avail
-    pgs:
-```
-
-We should now be able to connect using the napi module:
-```console
-$ cd n-api
-$ npm i
-$ npm run compile
-$ node index.js
-librados version: 3.0.0
-ceph-napi init...
-user_name: client.admin, cluster_name: ceph
-Created a cluster handle.
-Read cluster config: 
-Connected to the cluster...
-```
-
-Tail monitor logs:
-```console
-$ tail -f /var/log/ceph/ceph-mon.localhost.localdomain.log
-```
-
 ### Object Store Daemons
 This the what actually stores the data on a file system and providing access to
 this data. The data that these OSDs store has an identifier, binary data, and
@@ -184,72 +59,12 @@ metadata consiting of key/value pairs.
 This data can be accessed through the Ceph API, using Amazon S2 services,
 or using the provided REST based API.
 
-#### Configure an OSD
-Generate an id for the OSD:
-```console
-$ uuidgen 
-69480bbf-e494-408e-a094-9356220f07e6
-```
-Generate a cephx key for the OSD:
-```console
-$ ceph-authtool --gen-print-key
-AQAn19BeDxE8JBAAo5eHcn7NGOTWyEAz48uQIA==
-```
-
-Create the OSD:
-```console
-[root@localhost ~]# echo "{\"cephx_secret\": \"AQAn19BeDxE8JBAAo5eHcn7NGOTWyEAz48uQIA==\"}" | ceph osd new 69480bbf-e494-408e-a094-9356220f07e6 -i - -n client.bootstrap-osd -k /var/lib/ceph/bootstrap-osd/ceph.keyring
-
-2020-05-29T11:39:45.869+0200 7f9f93490700 -1 auth: unable to find a keyring on /etc/ceph/ceph.client.bootstrap-osd.keyring,/etc/ceph/ceph.keyring,/etc/ceph/keyring,/etc/ceph/keyring.bin,: (2) No such file or directory
-
-2020-05-29T11:39:45.869+0200 7f9f93490700 -1 AuthRegistry(0x7f9f8c058aa8) no keyring found at /etc/ceph/ceph.client.bootstrap-osd.keyring,/etc/ceph/ceph.keyring,/etc/ceph/keyring,/etc/ceph/keyring.bin,, disabling cephx
-```
-```console
-$ mkdir -p /var/lib/ceph/osd/ceph-7f9f93490700 
-```
-
-Write the secret to the OSD keyring:
-```console
-$ ceph-authtool --create-keyring /var/lib/ceph/osd/ceph-7f9f93490700/keyring --name osd.7f9f93490700 --add-key AQAn19BeDxE8JBAAo5eHcn7NGOTWyEAz48uQIA==
-creating /var/lib/ceph/osd/ceph-7f9f93490700/keyring
-added entity osd.7f9f93490700 auth(key=AQAn19BeDxE8JBAAo5eHcn7NGOTWyEAz48uQIA==)
-```
-
-Initialize the OSD data dir:
-```console
-$ ceph-osd -d -i 7f9f93490700 --mkfs --osd-uuid 69480bbf-e494-408e-a094-9356220f07e6
-```
-On my machine this just looks like it hangs the process and nothing happens. If
-I look in the log:
-```console
-$ sudo tail -f /var/log/ceph/ceph.audit.log 
-...
-2020-05-29T11:39:45.989613+0200 mon.localhost.localdomain (mon.0) 10 : audit [INF] from='client.? v1:192.168.1.74:0/1564672033' entity='client.bootstrap-osd' cmd='[{"prefix": "osd new", "uuid": "69480bbf-e494-408e-a094-9356220f07e6"}]': finished
-```
-
-Start the OSD daemon:
-```console
-$ ceph-osd -d --osd-data /var/lib/ceph/osd/ceph-7f9f93490700 --setuser root --setgroup root
-```
-
-After this I can see that there is one osd reported from `ceph -s`.
-
 ### Pools
+TODO:
 
-List the available pools:
-```console
-$ ceph osd lspools
-```
-This returns nothing, so lets create a new pool.
-
-Create a new pool named `data`:
-```console
-$ ceph osd pool create data
-pool 'data' created
-```
 
 ### Manager
-TODO
+TODO:
 
 ### Librados
 Is a library allowing direct access to RADOS.
@@ -380,108 +195,35 @@ Is a cloud object protocol used with amazons online file storage web service.
 ### Swift
 Like S3 is a cloud object protocol but from the OpenStack foundation.
 
-TODO: continue fleshing out components that make up Ceph
-
 ### Installing Ceph
 This section will go through installing Ceph on Fedora. Most examples that I've
 come accross use a tool named `ceph-deploy` but this tool is no longer maintained
 and does not work with my version of Fedora ([link](https://ceph.io/ceph-management/introducing-cephadm/)).
 
-I'm using Fedora 31 and the latest cephadm is compatible (as far as I can tell)
-with version 15.2.1 of Ceph. But trying to install 15.2.1 on Fedora does not
-work (see below for details) and will fallback to installing 14.9.2 which is
-easy to miss. I've not been able to work around this so I opted to compile
-ceph locally instead (https://github.com/ceph/ceph#checking-out-the-source).
-After building, which takes a while, and running `make install` I got the following
-error when running ceph
-```console
-$ which ceph
-/usr/local/bin/ceph
-$ ceph --version
-Traceback (most recent call last):
-  File "/usr/local/bin/ceph", line 151, in <module>
-    from ceph_daemon import admin_socket, DaemonWatcher, Termsize
-  File "/usr/local/lib/python3.7/site-packages/ceph_daemon.py", line 24, in <module>
-    from prettytable import PrettyTable, HEADER
-ModuleNotFoundError: No module named 'prettytable'
-```
-This can be fixed bu installing `PrettyTable`:
-```console
-$ sudo pip install PrettyTable
-```
-```console
-$ ceph --version
-ceph version 16.0.0-1852-g79c7ac53e6 (79c7ac53e671282ba8019f663e1449663342bfbd) pacific (dev)
-```
-
-```console
-$ sudo ./cephadm bootstrap --mon-ip 192.168.1.74 --allow-fqdn-hostname
-...
-INFO:cephadm:Non-zero exit code 2 from /usr/bin/podman run --rm --net=host -e CONTAINER_IMAGE=docker.io/ceph/ceph:v15 -e NODE_NAME=localhost.localdomain -v /var/log/ceph/82caea9a-9fd3-11ea-b761-482ae34923e7:/var/log/ceph:z -v /tmp/ceph-tmphd_55e_u:/etc/ceph/ceph.client.admin.keyring:z -v /tmp/ceph-tmpgtca6lau:/etc/ceph/ceph.conf:z --entrypoint /usr/bin/ceph docker.io/ceph/ceph:v15 orch host add localhost.localdomain
-INFO:cephadm:/usr/bin/ceph:stderr Error ENOENT: Failed to connect to localhost.localdomain (localhost.localdomain).  Check that the host is reachable and accepts connections using the cephadm SSH key
-INFO:cephadm:/usr/bin/ceph:stderr you may want to run: 
-INFO:cephadm:/usr/bin/ceph:stderr > ssh -F =(ceph cephadm get-ssh-config) -i =(ceph config-key get mgr/cephadm/ssh_identity_key) root@localhost.localdomain
-Traceback (most recent call last):
-  File "./cephadm", line 4614, in <module>
-    r = args.func()
-  File "./cephadm", line 1154, in _default_image
-    return func()
-  File "./cephadm", line 2584, in command_bootstrap
-    cli(['orch', 'host', 'add', host])
-  File "./cephadm", line 2441, in cli
-    ).run(timeout=timeout)
-  File "./cephadm", line 2174, in run
-    self.run_cmd(), desc=self.entrypoint, timeout=timeout)
-  File "./cephadm", line 837, in call_throws
-    raise RuntimeError('Failed command: %s' % ' '.join(command))
-RuntimeError: Failed command: /usr/bin/podman run --rm --net=host -e CONTAINER_IMAGE=docker.io/ceph/ceph:v15 -e NODE_NAME=localhost.localdomain -v /var/log/ceph/82caea9a-9fd3-11ea-b761-482ae34923e7:/var/log/ceph:z -v /tmp/ceph-tmphd_55e_u:/etc/ceph/ceph.client.admin.keyring:z -v /tmp/ceph-tmpgtca6lau:/etc/ceph/ceph.conf:z --entrypoint /usr/bin/ceph docker.io/ceph/ceph:v15 orch host add localhost.localdomain
-```
-```console
-$ sudo ceph cephadm get-ssh-config
-[sudo] password for danielbevenius: 
-Host *
-  User root
-  StrictHostKeyChecking no
-  UserKnownHostsFile /dev/null
-  ConnectTimeout=30
-$ sudo ceph config-key get mgr/cephadm/ssh_identity_key
-
-
-$ ssh -F =(ceph cephadm get-ssh-config) -i =(ceph config-key get mgr/cephadm/ssh_identity_key) root@localhost.localdomain
-```
-Remove ceph if it is already installed.
-```console
-$ sudo dnf remove ceph-common
-```
-
-Install `cephadm`:
 ```console
 $ curl --silent --remote-name --location https://github.com/ceph/ceph/raw/octopus/src/cephadm/cephadm
 $ chmod 744 cephadm
-```
+$ sudo hostname ip-192-168-1-74
+$ sudo ./cephadm bootstrap --mon-ip 192.168.1.74
+INFO:cephadm:Ceph Dashboard is now available at:
 
-```console
-$ sudo ./cephadm add-repo --version 15.2.1
-INFO:root:Writing repo to /etc/yum.repos.d/ceph.repo...
-```
-There was no repository for Fedora 31 which I'm using so I updated the above
-`ceph.repo` file to use `el8` instead.
+	     URL: https://ip-192-168-1-74:8443/
+	    User: admin
+	Password: 04t7wb1wkx
 
-Install ceph tools:
-```console
-$ sudo dnf install ceph-common
-Problem: cannot install the best candidate for the job
-  - nothing provides /usr/libexec/platform-python needed by ceph-common-2:15.2.1-0.el8.x86_64
-```
+INFO:cephadm:You can access the Ceph CLI with:
 
-Starting a Ceph cluster:
-```console
-$ sudo ./cephadm bootstrap --mon-ip 192.168.1.74 --allow-fqdn-hostname
-```
+	sudo ./cephadm shell --fsid f8fb78fe-a3f4-11ea-96f7-482ae34923e7 -c /etc/ceph/ceph.conf -k /etc/ceph/ceph.client.admin.keyring
 
-Get ip:
-```console
-$ ip addr show
+INFO:cephadm:Please consider enabling telemetry to help improve Ceph:
+
+	ceph telemetry on
+
+For more information see:
+
+	https://docs.ceph.com/docs/master/mgr/telemetry/
+
+INFO:cephadm:Bootstrap complete.
 ```
 
 ```console
