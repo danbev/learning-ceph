@@ -43,6 +43,7 @@ class InitWorker : public Napi::AsyncWorker {
       SetError("Cound not connect to the cluster");
       return;
     }
+    std::cout << "Connected to Ceph cluster" << '\n';
     // TODO: we should really create a ObjectWrap for this and enable user
     // to create on and call methods on it. That instance would also store the
     // Rados instance (named cluster) here. But for now I just want to try things
@@ -53,7 +54,20 @@ class InitWorker : public Napi::AsyncWorker {
     if (ret < 0) {
       std::cout << "cannot open rados pool: " << poolname << ", ret: " << ret << '\n';
       SetError("Cound not open rados pool");
+      return;
     }
+
+    librados::bufferlist bl;
+    bl.append("bajja");
+    std::cout << "Going to write to pool " << io_ctx.get_pool_name() << '\n';
+    std::cout << "Is io_ctx valid: " << io_ctx.is_valid() << '\n';
+    //ret = io_ctx.write_full("bajja-id", bl);
+    ret = io_ctx.create("bajja-id", false);
+    if (ret < 0) {
+      std::cout << "could not write to pool: " << poolname << ", ret: " << ret << '\n';
+      SetError("Cound not write to pool");
+    }
+
 
   }
 
