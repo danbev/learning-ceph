@@ -226,42 +226,6 @@ For more information see:
 INFO:cephadm:Bootstrap complete.
 ```
 
-```console
-$ sudo ./cephadm ls
-[
-    {
-        "style": "cephadm:v1",
-        "name": "mon.localhost.localdomain",
-        "fsid": "62418068-9a65-11ea-b0db-482ae34923e7",
-        "enabled": true,
-        "state": "running",
-        "container_id": "648a087052751e5a40a5048f5a04964b0d105f16d96571b0413795809eb2eeb8",
-        "container_image_name": "docker.io/ceph/ceph:v15",
-        "container_image_id": "4569944bb86c3f9b5286057a558a3f852156079f759c9734e54d4f64092be9fa",
-        "version": "15.2.2",
-        "started": "2020-05-20T06:45:20.837583",
-        "created": "2020-05-20T06:45:17.648583",
-        "deployed": "2020-05-20T06:45:16.743583",
-        "configured": "2020-05-20T06:45:17.648583"
-    },
-    {
-        "style": "cephadm:v1",
-        "name": "mgr.localhost.localdomain.tdctad",
-        "fsid": "62418068-9a65-11ea-b0db-482ae34923e7",
-        "enabled": true,
-        "state": "running",
-        "container_id": "74fe45114309474f286e7060b590457104daa247654d14170e6c8eac456a4ea3",
-        "container_image_name": "docker.io/ceph/ceph:v15",
-        "container_image_id": "4569944bb86c3f9b5286057a558a3f852156079f759c9734e54d4f64092be9fa",
-        "version": "15.2.2",
-        "started": "2020-05-20T06:45:21.822435",
-        "created": "2020-05-20T06:45:21.757585",
-        "deployed": "2020-05-20T06:45:21.338585",
-        "configured": "2020-05-20T06:45:21.757585"
-    }
-]
-```
-
 Get the status of the Ceph cluster:
 ```console
 $ sudo ceph -s
@@ -290,10 +254,10 @@ Note that is you forget the `sudo` command you'll get the following error:
 $ ceph -s
 [errno 13] error connecting to the cluster
 ```
-
-Adding and OSD:
+This will also happen with a node client if you try to connect. For now, I've
+just chmod:ed all the files in `/etc/ceph`:
 ```console
-$
+$ sudo chmod 777 /etc/ceph/*
 ```
 
 Accessing the Ceph cluster:
