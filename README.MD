@@ -60,7 +60,7 @@ This data can be accessed through the Ceph API, using Amazon S2 services,
 or using the provided REST based API.
 
 ### Pools
-TODO:
+Are logical groups of ceph objects.
 
 
 ### Manager
@@ -260,10 +260,12 @@ just chmod:ed all the files in `/etc/ceph`:
 $ sudo chmod 777 /etc/ceph/*
 ```
 
-Accessing the Ceph cluster:
+For our experimention we need to create a pool:
 ```console
-$ sudo ./cephadm shell
+$ ceph osd pool create data
+pool 'data' created
 ```
+This is the name we use in [index.js](./n-api/index.js).
 
 To stop a cluster:
 ```
@@ -291,7 +293,23 @@ $ npm i
 $ npm run compile
 $ node index.js
 librados version: 3.0.0
+continue...
+ceph-napi init...
+client.admin
+Connected to Ceph cluster
+Going to write to pool data
+Is io_ctx valid: 1
 ```
+*WIP* Currently trying to write to the pool just hangs which is what I'm currently
+trying to figure out...
+
+### Ceph REST client
+This section should look at how a Ceph REST gateway is set up and create an\
+example client that uses it.
+TODO:
+
+### Native client vs REST client
+TODO: Document the pros and cons.
 
 ### Journaling file system
 Is when transaction or operations are stored in a special allocation on disk
