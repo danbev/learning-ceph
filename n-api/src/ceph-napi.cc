@@ -39,7 +39,7 @@ class InitWorker : public Napi::AsyncWorker {
 
     ret = cluster.connect();
     if (ret < 0) {
-      std::cout << "Connected not connect to the cluster. ret: " << ret << '\n';
+      std::cout << "Could not connect to the cluster. ret: " << ret << '\n';
       SetError("Cound not connect to the cluster");
       return;
     }
@@ -59,15 +59,12 @@ class InitWorker : public Napi::AsyncWorker {
 
     librados::bufferlist bl;
     bl.append("bajja");
-    std::cout << "Going to write to pool " << io_ctx.get_pool_name() << '\n';
-    std::cout << "Is io_ctx valid: " << io_ctx.is_valid() << '\n';
-    //ret = io_ctx.write_full("bajja-id", bl);
-    ret = io_ctx.create("bajja-id", false);
+    std::cout << std::boolalpha << "Is io_ctx valid: " << io_ctx.is_valid() << '\n';
+    ret = io_ctx.write_full("hw", bl);
     if (ret < 0) {
       std::cout << "could not write to pool: " << poolname << ", ret: " << ret << '\n';
       SetError("Cound not write to pool");
     }
-
 
   }
 
