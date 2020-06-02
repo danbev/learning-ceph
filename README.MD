@@ -318,9 +318,9 @@ After this the state of the cluster is:
 
 #### io_ctx.write_full hangs
 I'm able to connect to the cluster and create an IoCtx using the pool created
-above, but when I try call `io_ctx.write_full` nothing happens, the process 
-hangs for ever and I've not been able to find anything in the logs which could
-point me to the issue.
+above, but when I try call [io_ctx.write_full](./n-api/src/ceph-napi.cc#L63) nothing
+happens, the process hangs for ever and I've not been able to find anything in
+the logs which could point me to the issue.
 I should not the I have absolutely know idea if this should work, especially 
 with regards to the configuration of the cluster and in particular the OSD created
 above.
