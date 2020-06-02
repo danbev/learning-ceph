@@ -203,6 +203,8 @@ and does not work with my version of Fedora ([link](https://ceph.io/ceph-managem
 ```console
 $ curl --silent --remote-name --location https://github.com/ceph/ceph/raw/octopus/src/cephadm/cephadm
 $ chmod 744 cephadm
+$ ./cephadm add-repo --release octopus
+$ ./cephadm install
 $ sudo hostname ip-192-168-1-74
 $ sudo ./cephadm bootstrap --mon-ip 192.168.1.74
 INFO:cephadm:Ceph Dashboard is now available at:
