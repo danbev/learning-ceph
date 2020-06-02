@@ -200,11 +200,26 @@ This section will go through installing Ceph on Fedora. Most examples that I've
 come accross use a tool named `ceph-deploy` but this tool is no longer maintained
 and does not work with my version of Fedora ([link](https://ceph.io/ceph-management/introducing-cephadm/)).
 
+#### Install cephadm
 ```console
 $ curl --silent --remote-name --location https://github.com/ceph/ceph/raw/octopus/src/cephadm/cephadm
 $ chmod 744 cephadm
-$ ./cephadm add-repo --release octopus
-$ ./cephadm install
+$ sudo ./cephadm add-repo --release octopus
+```
+Currently, there is now repository for `fc31` which I'm using, so `/etc/yum.repos.d/ceph.repo`
+needs to be updated to use `el8` instead which I hope will work.
+
+Next install `ceph`:
+```console
+$ sudo ./cephadm install
+```
+This will actually install an older version of ceph as there are package dependencies
+that cannot be met. See commit history for notes about this (I'm trying to keep
+unnecessary details out of this document).
+
+I've needed to set my hostname to not be a fully qualified domain name before
+beeing able to successfully bootstrap the cluster:
+```
 $ sudo hostname ip-192-168-1-74
 $ sudo ./cephadm bootstrap --mon-ip 192.168.1.74
 INFO:cephadm:Ceph Dashboard is now available at:
@@ -306,16 +321,18 @@ I'm able to connect to the cluster and create an IoCtx using the pool created
 above, but when I try call `io_ctx.write_full` nothing happens, the process 
 hangs for ever and I've not been able to find anything in the logs which could
 point me to the issue.
+I should not the I have absolutely know idea if this should work, especially 
+with regards to the configuration of the cluster and in particular the OSD created
+above.
 
-
-To stop a cluster:
+#### Stop a cluster
 ```
 $sudo ./cephadm rm-cluster --fsid=62418068-9a65-11ea-b0db-482ae34923e7 --force
 ```
 You can use `./cephadm ls` to get the fsid.
 
 
-Installing librados:
+### Installing librados
 ```console
 $ sudo dnf install -y librados-devel
 ```
