@@ -11,4 +11,3 @@ const clustername = "ceph"
 ceph_napi.init(username, clustername, (value) => {
   console.log('init callback: ', value);
 });
-console.log('continue...');

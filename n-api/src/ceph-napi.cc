@@ -31,7 +31,7 @@ class InitWorker : public Napi::AsyncWorker {
       return;
     }
 
-    ret = cluster.conf_read_file("/etc/ceph/ceph.conf");
+    ret = cluster.conf_read_file("/home/danielbevenius/work/ceph/ceph/build/ceph.conf");
     if (ret < 0) {
       SetError("Cound not read /etc/ceph/ceph.conf");
       return;
@@ -57,15 +57,25 @@ class InitWorker : public Napi::AsyncWorker {
       return;
     }
 
-    librados::bufferlist bl;
-    bl.append("bajja");
+    librados::bufferlist wbl;
+    wbl.append("bajja");
     std::cout << std::boolalpha << "Is io_ctx valid: " << io_ctx.is_valid() << '\n';
-    ret = io_ctx.write_full("hw", bl);
+    ret = io_ctx.write_full("msg_id", wbl);
     if (ret < 0) {
       std::cout << "could not write to pool: " << poolname << ", ret: " << ret << '\n';
       SetError("Cound not write to pool");
     }
+    std::cout << "Successfully wrote to pool data."<< '\n';
 
+    librados::bufferlist rbl;
+    ret = io_ctx.read("msg_id", rbl, 6, 0);
+    if (ret < 0) {
+      std::cout << "could not read, ret: " << ret << '\n';
+      SetError("Cound not read from pool");
+    }
+    std::string value;
+    rbl.begin().copy(ret, value);
+    std::cout << "Successfully read data: " << value << '\n';
   }
 
   void OnOK() override {
