@@ -281,40 +281,9 @@ For our experimention we need to create a pool:
 ```console
 $ ceph osd pool create data
 pool 'data' created
+$ ceph osd lspools
 ```
 This is the name we use in [index.js](./n-api/index.js).
-
-Now, we still need to create an OSD for our cluster:
-```console
-$ ceph osd create
-0
-$ mkdir /var/lib/ceph/osd/ceph-0
-$ ceph-osd -i 0 --mkfs --mkkey
-$ ceph auth add osd.0 osd 'allow *' mon 'allow rwx' -i /var/lib/ceph/osd/ceph-0/keyring
-```
-
-After this the state of the cluster is:
-```console
-[root@ip-192-168-1-74 ~]# ceph -s
-  cluster:
-    id:     f8fb78fe-a3f4-11ea-96f7-482ae34923e7
-    health: HEALTH_WARN
-            Reduced data availability: 43 pgs inactive
-            1 pool(s) have non-power-of-two pg_num
-            OSD count 1 < osd_pool_default_size 3
- 
-  services:
-    mon: 1 daemons, quorum ip-192-168-1-74 (age 19h)
-    mgr: ip-192-168-1-74.rqzppr(active, since 19h)
-    osd: 1 osds: 0 up, 0 in
- 
-  data:
-    pools:   3 pools, 43 pgs
-    objects: 0 objects, 0 B
-    usage:   0 B used, 0 B / 0 B avail
-    pgs:     100.000% pgs unknown
-             43 unknown
-```
 
 #### io_ctx.write_full hangs
 I'm able to connect to the cluster and create an IoCtx using the pool created
@@ -377,10 +346,9 @@ $ ./bin/ceph -s
       [............................] 
 ```
 
-
-#### Stop a cluster
+#### Stop a cluster started with cephadm
 ```
-$sudo ./cephadm rm-cluster --fsid=62418068-9a65-11ea-b0db-482ae34923e7 --force
+$ sudo ./cephadm rm-cluster --fsid=62418068-9a65-11ea-b0db-482ae34923e7 --force
 ```
 You can use `./cephadm ls` to get the fsid.
 
