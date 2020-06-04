@@ -325,6 +325,59 @@ I should not the I have absolutely know idea if this should work, especially
 with regards to the configuration of the cluster and in particular the OSD created
 above.
 
+### Compiling Ceph
+First clone ceph:
+```console
+$ git clone git@github.com:ceph/ceph
+$ cd ceph
+$ git submodule update --init --recursive
+```
+Next, we use cmake to generate make files:
+```console
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make -j8
+```
+
+### Start a Ceph cluster with vstart:
+After having built ceph run the following command from the checked out ceph
+repository:
+```console
+$ cd build
+$ env MON=1 OSD=1 MDS=1 MGR=1 RGW=1 ./src/vstart.sh -n -d --localhost
+```
+After this the status of the cluster can be checked using:
+```console
+$ ./bin/ceph -s
+ cluster:
+    id:     bf1a5449-b6c8-4af8-9ee7-9edf7f2a8782
+    health: HEALTH_WARN
+            7 pool(s) have no replicas configured
+ 
+  services:
+    mon: 1 daemons, quorum a (age 72s)
+    mgr: x(active, since 67s)
+    mds: a:1 {0=a=up:active}
+    osd: 1 osds: 1 up (since 42s), 1 in (since 42s)
+    rgw: 1 daemon active (8000)
+ 
+  task status:
+    scrub status:
+        mds.a: idle
+ 
+  data:
+    pools:   7 pools, 193 pgs
+    objects: 223 objects, 9.5 KiB
+    usage:   2.0 GiB used, 99 GiB / 101 GiB avail
+    pgs:     193 active+clean
+ 
+  progress:
+    PG autoscaler decreasing pool 7 PGs from 32 to 8 (0s)
+      [............................] 
+```
+
+
 #### Stop a cluster
 ```
 $sudo ./cephadm rm-cluster --fsid=62418068-9a65-11ea-b0db-482ae34923e7 --force
