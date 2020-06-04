@@ -4,20 +4,47 @@
 #include <iostream>
 #include "ceph-napi.h"
 
-Napi::Object Init(Napi::Env env, Napi::Object exports) {
-  exports.Set("version", Napi::Function::New(env, cephnapi::version));
-  exports.Set("init", Napi::Function::New(env, cephnapi::init));
+Napi::Object Initialize(Napi::Env env, Napi::Object exports) {
+  Ceph::Init(env, exports);
   return exports;
 }
 
-namespace cephnapi {
+Napi::Object Ceph::Init(Napi::Env env, Napi::Object exports) {
+  std::cout << "Ceph init..." << '\n';
+  Napi::Function function = DefineClass(env, "Ceph", {
+      InstanceMethod<&Ceph::Version>("version"),
+      InstanceMethod<&Ceph::Connect>("connect")
+  });
+  constructor = Napi::Persistent(function);
+  constructor.SuppressDestruct();
+  exports.Set("Ceph", function);
+  return exports;
+}
+
+Napi::FunctionReference Ceph::constructor;
+
+Ceph::Ceph(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Ceph>(info) {
+    Napi::Env env = info.Env();
+    std::cout << "Ceph constructor..." << '\n';
+    if (info.Length() == 1) {
+      if (info[0].IsObject()) {
+        Napi::Object config = info[0].As<Napi::Object>();
+        Napi::Value ceph_conf_value = config.Get("ceph_conf");
+        if (!ceph_conf_value.IsEmpty()) {
+          ceph_conf_ = ceph_conf_value.As<Napi::String>().Utf8Value();
+        }
+      }
+    }
+}
+
 
 class InitWorker : public Napi::AsyncWorker {
  public:
   InitWorker(std::string& username,
              std::string& clustername,
+             std::string& ceph_conf,
              Napi::Function& callback) :
-    AsyncWorker(callback), username_(username), clustername_(clustername) {}    
+    AsyncWorker(callback), username_(username), ceph_conf_(ceph_conf), clustername_(clustername) {}    
 
   void Execute() override {
     std::cout << "ceph-napi init..." << '\n';
@@ -31,9 +58,9 @@ class InitWorker : public Napi::AsyncWorker {
       return;
     }
 
-    ret = cluster.conf_read_file("/home/danielbevenius/work/ceph/ceph/build/ceph.conf");
+    ret = cluster.conf_read_file(ceph_conf_.c_str());
     if (ret < 0) {
-      SetError("Cound not read /etc/ceph/ceph.conf");
+      SetError("Cound not read ceph.conf");
       return;
     }
 
@@ -90,9 +117,10 @@ class InitWorker : public Napi::AsyncWorker {
  private:
   std::string username_;
   std::string clustername_;
+  std::string ceph_conf_;
 };
 
-Napi::String version(const Napi::CallbackInfo& info) {
+Napi::Value Ceph::Version(const Napi::CallbackInfo& info) {
   int major, minor, extra;
   rados_version(&major, &minor, &extra);
   std::string version = std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(extra);
@@ -100,7 +128,7 @@ Napi::String version(const Napi::CallbackInfo& info) {
   return returnValue;
 }
 
-Napi::Value init(const Napi::CallbackInfo& info) {
+Napi::Value Ceph::Connect(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   if (!info.Length() > 3) {
     Napi::TypeError::New(env, "username, cluster, and callback arguments "
@@ -125,11 +153,9 @@ Napi::Value init(const Napi::CallbackInfo& info) {
   std::string username = info[0].As<Napi::String>().Utf8Value();
   std::string clustername = info[1].As<Napi::String>().Utf8Value();
   Napi::Function callback = info[2].As<Napi::Function>();
-  InitWorker* worker = new InitWorker(username, clustername, callback);
+  InitWorker* worker = new InitWorker(username, clustername, ceph_conf_, callback);
   worker->Queue();
   return info.Env().Undefined();
 }
 
-} // namespace cephnapi
-
-NODE_API_MODULE(cephnapi, Init)
+NODE_API_MODULE(NODE_GYP_MODULE_NAME, Initialize)
