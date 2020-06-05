@@ -388,7 +388,16 @@ example client that uses it.
 TODO:
 
 ### Native client vs REST client
-TODO: Document the pros and cons.
+The motivation for having a native node module for Ceph is that, from what I
+understand, a Ceph client is cluster aware and can communicate directly
+with OSD to read and write data. This could perhaps be useful in situaions where
+a user wants to implement a function as a service that responds to some Knative
+event. The function in this use case would not be exposed to the outside and
+could use the native Ceph node module instead of using a REST based client.
+
+A REST based client would be useful in other cases where user already familiar
+with the S3 API and Swift. 
+TODO: investigate the S3 API and Swift
 
 ### Journaling file system
 Is when transaction or operations are stored in a special allocation on disk
