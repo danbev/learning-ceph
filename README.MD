@@ -69,7 +69,7 @@ TODO:
 ### Librados
 Is a library allowing direct access to RADOS.
 
-### Radosgw
+### Rados Object Gateway
 Is a REST-based gateway.
 
 ### Controlled Replication Under Scalable Hashing (CRUSH)
@@ -191,9 +191,12 @@ rule replicated_rule {
 
 ### Amazon Simple Storage Service (S3)
 Is a cloud object protocol used with amazons online file storage web service.
+Is not opensource.
 
 ### Swift
-Like S3 is a cloud object protocol but from the OpenStack foundation.
+OpenSource and originally developed by Rackspace. 
+A common usecase for Swift is to virtual machine images. 
+Implemented in Python and perhaps one in Go (not clear on this yet).
 
 ### Installing Ceph
 This section will go through installing Ceph on Fedora. Most examples that I've
@@ -314,8 +317,36 @@ After having built ceph run the following command from the checked out ceph
 repository:
 ```console
 $ cd build
-$ env MON=1 OSD=1 MDS=1 MGR=1 RGW=1 ./src/vstart.sh -n -d --localhost
+$ env MON=1 OSD=1 MDS=1 MGR=1 RGW=1 ../src/vstart.sh -n -d --localhost
+...
+
+setting up user testid
+setting up s3-test users
+setting up user tester
+
+S3 User Info:
+  access key:  0555b35654ad1656d804
+  secret key:  h7GhxuBLTrlhVUyxSPUKUV8r/2EI4ngqJxD7iBdBYLhwluN30JaT3Q==
+
+Swift User Info:
+  account   : test
+  user      : tester
+  password  : testing
+
+start rgw on http://localhost:8000
+/home/danielbevenius/work/ceph/ceph/build/bin/radosgw -c /home/danielbevenius/work/ceph/ceph/build/ceph.conf --log-file=/home/danielbevenius/work/ceph/ceph/build/out/radosgw.8000.log --admin-socket=/home/danielbevenius/work/ceph/ceph/build/out/radosgw.8000.asok --pid-file=/home/danielbevenius/work/ceph/ceph/build/out/radosgw.8000.pid --debug-rgw=20 --debug-ms=1 -n client.rgw.8000 '--rgw_frontends=beast port=8000' 
+vstart cluster complete. Use stop.sh to stop. See out/* (e.g. 'tail -f out/????') for debug output.
+
+dashboard urls: https://127.0.0.1:41818
+  w/ user/pass: admin / admin
+restful urls: https://127.0.0.1:42818
+  w/ user/pass: admin / b8937d0e-08f4-4ba0-a9f3-05ac3a4e93fe
+
 ```
+Notice that you can copy the `access key` and `secret key` which can be use
+to connect to the S3 interface/API. We also see the url and port the rados
+gateway listens to (https://127.0.0.1:41818).
+
 After this the status of the cluster can be checked using:
 ```console
 $ ./bin/ceph -s
@@ -344,6 +375,11 @@ $ ./bin/ceph -s
   progress:
     PG autoscaler decreasing pool 7 PGs from 32 to 8 (0s)
       [............................] 
+```
+
+### Stopping cluster started with vstart:
+```console
+$ ../src/stop.sh
 ```
 
 #### Stop a cluster started with cephadm
