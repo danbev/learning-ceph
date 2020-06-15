@@ -412,13 +412,15 @@ $ cd n-api
 $ npm i
 $ npm run compile
 $ node index.js
+Ceph init...
+Ceph constructor...
 librados version: 3.0.0
-continue...
 ceph-napi init...
-client.admin
 Connected to Ceph cluster
-Going to write to pool data
-Is io_ctx valid: 1
+Is io_ctx valid: true
+Successfully wrote to pool data.
+Successfully read data: bajja
+init callback:  connected
 ```
 
 ### Ceph REST client
