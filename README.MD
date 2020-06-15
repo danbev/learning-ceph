@@ -2,6 +2,17 @@
 This sole purpose of this project is to learn about ceph storage and figure out
 the best way use Ceph from Node.js
 
+### Contents                                                                        
+1. [Background](background)                                                 
+1. [Installing Ceph](#installing-ceph)                                                              
+1. [Compiling Ceph](#compiling-ceph) 
+1. [Starting Ceph](#start-a-ceph-cluster-with-vstart)
+1. [Stopping Ceph](#stopping-cluster-started with-vstart)
+1. [Installing librados](#installing-librados)
+1. [Node N-API example](#ceph-napi)
+1. [Node Amazon S3 SDK example](#ceph_rest_client)
+1. [N-API vs Amazon S3 SDK](#n_api_vs_amazon_s2_sdk)
+
 ### Background
 This section will contains information about Ceph as I don't know anything at
 all about it, nor am I very familiar with storage solutions either.
@@ -16,7 +27,7 @@ There are 3 types of storage that Ceph provides:
 * Object storage via RADOS Gateway
 * File storage via CephFS
 
-### Reliable Autonomous Distributed Object Store (RADOS)
+#### Reliable Autonomous Distributed Object Store (RADOS)
 This is the object store upon which everything else is built. This layer contains
 the Object Store Daeomons (OSD). These daemons are totally independant and form
 peer-to-peer relationships to form a cluster (sounds similar to what is/was
@@ -26,10 +37,10 @@ use multiple disks and a RAID controller).
 
 Each object is a stream of binary data which is associated key when created.
 
-### Storage cluster
+#### Storage cluster
 A storage cluster consists of monitors, and OSD daemons.
 
-### Monitors
+#### Monitors
 These are responsible for providing a known cluster state including membership
 and use cluster maps for this. Cluster clients retrives the cluster map from one
 of the monitors.
@@ -52,32 +63,27 @@ when bootstrapping the initial monitor.
 Administrator keyring which is used by the ceph CLI tools, which requires a
 user named client.admin. This user must also be added to the monitor keyring.
 
-### Object Store Daemons
+#### Object Store Daemons
 This the what actually stores the data on a file system and providing access to
 this data. The data that these OSDs store has an identifier, binary data, and
 metadata consiting of key/value pairs.
 This data can be accessed through the Ceph API, using Amazon S2 services,
 or using the provided REST based API.
 
-### Pools
+#### Pools
 Are logical groups of ceph objects.
 
-
-### Manager
-TODO:
-
-### Librados
+#### Librados
 Is a library allowing direct access to RADOS.
 
-### Rados Object Gateway
+#### Rados Object Gateway
 Is a REST-based gateway.
 
-### Controlled Replication Under Scalable Hashing (CRUSH)
+#### Controlled Replication Under Scalable Hashing (CRUSH)
 This is the name of the algorighm that Ceph uses which is what determines where
 to place data. The CRUSH map provides a view of what the cluster looks like.
 
-
-### Clients
+#### Clients
 Before a client can start storing/retreiving data it needs to contact one of
 the monitors to get the various cluster maps. With the cluster map the client is
 made aware of all the monitors in the cluster, all the OSDs, and the metadata
@@ -87,7 +93,7 @@ stored. The location of where data is stored is calculated/computed.
 Once it has these it can operate independently as the client is cluster aware.
 The client writes an object to a pool and specifies an object id.
 
-### Cluster maps
+#### Cluster maps
 Both ceph clients and OSD daemons depend on having knowledge about the cluster.
 This is information is provided in five maps.
 
@@ -189,11 +195,11 @@ rule replicated_rule {
 ```
 
 
-### Amazon Simple Storage Service (S3)
+#### Amazon Simple Storage Service (S3)
 Is a cloud object protocol used with amazons online file storage web service.
 Is not opensource.
 
-### Swift
+#### Swift
 OpenSource and originally developed by Rackspace. 
 A common usecase for Swift is to virtual machine images. 
 Implemented in Python and perhaps one in Go (not clear on this yet).
@@ -312,7 +318,7 @@ $ cmake ..
 $ make -j8
 ```
 
-### Start a Ceph cluster with vstart:
+### Start a Ceph cluster with vstart
 After having built ceph run the following command from the checked out ceph
 repository:
 ```console
@@ -377,12 +383,12 @@ $ ./bin/ceph -s
       [............................] 
 ```
 
-### Stopping cluster started with vstart:
+### Stopping cluster started with vstart
 ```console
 $ ../src/stop.sh
 ```
 
-#### Stop a cluster started with cephadm
+### Stop a cluster started with cephadm
 ```
 $ sudo ./cephadm rm-cluster --fsid=62418068-9a65-11ea-b0db-482ae34923e7 --force
 ```
@@ -400,7 +406,6 @@ written using N-API might look like.
 
 This native module use [Librados](https://docs.ceph.com/docs/master/rados/api/librados/).
 
-
 #### Building
 ```console
 $ cd n-api
@@ -415,27 +420,28 @@ Connected to Ceph cluster
 Going to write to pool data
 Is io_ctx valid: 1
 ```
-*WIP* Currently trying to write to the pool just hangs which is what I'm currently
-trying to figure out...
 
 ### Ceph REST client
-This section should look at how a Ceph REST gateway is set up and create an\
-example client that uses it.
-TODO:
+This section should look at how a Ceph REST gateway is set up and create an
+example client that uses it. The Ceph Object Gateway Daemon (radosgw) is a http
+server which provides access to a Ceph storage cluster. The REST APIs provided
+are compatible with both Amazon S3 and OpenStack Swift.
 
-### Native client vs REST client
+We think that users will be most comfortable with Amazon S3 API so the example
+here will show how to use to configure the Amazon S3 API to work against 
+radosgw.
+
+A very basic example can be found in [rest/index.js](./rest/index.js) showing
+how one can create a bucket and poplate it.
+
+### N-API vs Amazon S2 SDK
 The motivation for having a native node module for Ceph is that, from what I
 understand, a Ceph client is cluster aware and can communicate directly
-with OSD to read and write data. This could perhaps be useful in situaions where
+with OSDs to read and write data. This could perhaps be useful in situaions where
 a user wants to implement a function as a service that responds to some Knative
 event. The function in this use case would not be exposed to the outside and
 could use the native Ceph node module instead of using a REST based client.
 
 A REST based client would be useful in other cases where user already familiar
-with the S3 API and Swift. 
-TODO: investigate the S3 API and Swift
-
-### Journaling file system
-Is when transaction or operations are stored in a special allocation on disk
-allowing a write to be rolled-back if something happens to the write operation
-while it is in progress.
+with the S3 API and Swift. For most of these cases users should be able to use
+the Amazon S3 SDK to interact with a Ceph cluster.
