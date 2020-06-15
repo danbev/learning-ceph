@@ -2,6 +2,7 @@
 #include <rados/librados.hpp>
 #include <string>
 #include <iostream>
+#include <cerrno>
 #include "ceph-napi.h"
 
 Napi::Object Initialize(Napi::Env env, Napi::Object exports) {
@@ -78,7 +79,7 @@ class InitWorker : public Napi::AsyncWorker {
     librados::IoCtx io_ctx;
     const char* poolname = "data";
     ret = cluster.pool_create(poolname);
-    if (ret < 0) {
+    if (ret != (-EEXIST) && ret < 0) {
       std::cout << "Could not create pool: " << poolname << ", ret: " << ret << '\n';
       SetError("Cound not create rados pool");
       return;
