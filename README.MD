@@ -3,7 +3,7 @@ This sole purpose of this project is to learn about ceph storage and figure out
 the best way use Ceph from Node.js
 
 ### Contents
-1. [Background](background)                                                 
+1. [Background](#background)                                                 
 1. [Installing Ceph](#installing-ceph)
 1. [Compiling Ceph](#compiling-ceph)
 1. [Starting Ceph](#start-a-ceph-cluster-with-vstart)
