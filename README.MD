@@ -2,12 +2,12 @@
 This sole purpose of this project is to learn about ceph storage and figure out
 the best way use Ceph from Node.js
 
-### Contents                                                                        
+### Contents
 1. [Background](background)                                                 
-1. [Installing Ceph](#installing-ceph)                                                              
-1. [Compiling Ceph](#compiling-ceph) 
+1. [Installing Ceph](#installing-ceph)
+1. [Compiling Ceph](#compiling-ceph)
 1. [Starting Ceph](#start-a-ceph-cluster-with-vstart)
-1. [Stopping Ceph](#stopping-cluster-started with-vstart)
+1. [Stopping Ceph](#stopping-cluster-started-with-vstart)
 1. [Installing librados](#installing-librados)
 1. [Node N-API example](#ceph-napi)
 1. [Node Amazon S3 SDK example](#ceph_rest_client)
