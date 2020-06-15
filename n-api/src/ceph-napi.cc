@@ -77,6 +77,13 @@ class InitWorker : public Napi::AsyncWorker {
     // out and see if I can write data to an OSD.
     librados::IoCtx io_ctx;
     const char* poolname = "data";
+    ret = cluster.pool_create(poolname);
+    if (ret < 0) {
+      std::cout << "Could not create pool: " << poolname << ", ret: " << ret << '\n';
+      SetError("Cound not create rados pool");
+      return;
+    }
+
     ret = cluster.ioctx_create(poolname, io_ctx);
     if (ret < 0) {
       std::cout << "cannot open rados pool: " << poolname << ", ret: " << ret << '\n';
