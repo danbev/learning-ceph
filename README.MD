@@ -435,6 +435,11 @@ radosgw.
 
 A very basic example can be found in [rest/index.js](./rest/index.js) showing
 how one can create a bucket and poplate it.
+```console
+$ cd rest
+$ npm i
+$ node index.js
+```
 
 ### N-API vs Amazon S2 SDK
 The motivation for having a native node module for Ceph is that, from what I
