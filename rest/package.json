@@ -9,6 +9,6 @@
   "author": "Daniel Bevenius",
   "license": "Apache-2.0",
   "dependencies": {
-    "aws-sdk": "^2.696.0"
+    "aws-sdk": "^2.814.0"
   }
 }
